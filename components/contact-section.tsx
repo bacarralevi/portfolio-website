@@ -181,10 +181,10 @@ export default function ContactSection() {
                   </div>
 
                   <ReCAPTCHA
-                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_KEY!}
-                    ref={recaptchaRef}
+                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_KEY ?? ''}
                     onChange={(token) => setCaptchaToken(token)}
                   />
+
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? "Sending..." : "Send Message"}
