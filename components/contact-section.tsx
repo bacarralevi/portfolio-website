@@ -2,13 +2,15 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { Mail, Phone, MapPin, Github, Linkedin, Twitter } from "lucide-react"
+import { Mail, Phone, MapPin, Github } from "lucide-react"
+import emailjs from "@emailjs/browser"
+import ReCAPTCHA from "react-google-recaptcha"
 
 export default function ContactSection() {
   const [formData, setFormData] = useState({
@@ -20,6 +22,10 @@ export default function ContactSection() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState(false)
   const [submitError, setSubmitError] = useState("")
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+
+  const formRef = useRef<HTMLFormElement | null>(null)
+  const recaptchaRef = useRef<ReCAPTCHA | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -30,18 +36,34 @@ export default function ContactSection() {
     e.preventDefault()
     setIsSubmitting(true)
     setSubmitError("")
+    setSubmitSuccess(false)
 
-    // Simulate form submission
+    if (!formRef.current) return
+
+    if (!captchaToken) {
+      setSubmitError("Please complete the CAPTCHA before submitting.")
+      setIsSubmitting(false)
+      return
+    }
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      console.log("Form submitted:", formData)
+      const result = await emailjs.sendForm(
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID!,
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID!,
+        formRef.current,
+        process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY!
+      )
+
+      console.log("EmailJS result:", result.text)
       setSubmitSuccess(true)
       setFormData({ name: "", email: "", subject: "", message: "" })
-    } catch (error) {
-      setSubmitError("There was an error submitting the form. Please try again.")
-      console.error("Form submission error:", error)
+    } catch (error: any) {
+      console.error("EmailJS error:", error.text)
+      setSubmitError("Failed to send message. Please try again.")
     } finally {
       setIsSubmitting(false)
+      recaptchaRef.current?.reset()
+      setCaptchaToken(null)
     }
   }
 
@@ -117,7 +139,7 @@ export default function ContactSection() {
                   Thank you for your message! I'll get back to you soon.
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
                   {submitError && (
                     <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 p-4 rounded-md mb-4">
                       {submitError}
@@ -157,6 +179,12 @@ export default function ContactSection() {
                       required
                     />
                   </div>
+
+                  <ReCAPTCHA
+                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_KEY!}
+                    ref={recaptchaRef}
+                    onChange={(token) => setCaptchaToken(token)}
+                  />
 
                   <Button type="submit" className="w-full" disabled={isSubmitting}>
                     {isSubmitting ? "Sending..." : "Send Message"}
