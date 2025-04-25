@@ -1,9 +1,13 @@
+"use client"
+
 import Image from "next/image"
 import Link from "next/link"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ExternalLink, Github } from "lucide-react"
+import { toast } from "sonner"
 
 const projects = [
   {
@@ -33,6 +37,14 @@ const projects = [
 ]
 
 export default function ProjectsSection() {
+  const handleLiveClick = (url: string) => {
+    if (url === "#") {
+      toast.warning("No live demo available. Please install the project locally.")
+    } else {
+      window.open(url, "_blank")
+    }
+  }
+
   return (
     <section id="projects" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4 md:px-6">
@@ -65,11 +77,9 @@ export default function ProjectsSection() {
                   ))}
                 </div>
                 <div className="flex gap-3">
-                  <Button asChild size="sm" className="gap-2">
-                    <Link href={project.liveUrl}>
-                      <ExternalLink className="h-4 w-4" />
-                      <span>Live Demo</span>
-                    </Link>
+                  <Button size="sm" className="gap-2" onClick={() => handleLiveClick(project.liveUrl)}>
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Live Demo</span>
                   </Button>
                   <Button asChild variant="outline" size="sm" className="gap-2">
                     <Link href={project.sourceUrl}>
